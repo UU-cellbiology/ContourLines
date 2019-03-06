@@ -25,12 +25,12 @@ public class Point implements Cloneable {
 		return pointret;
 	}
 	
-	public double getX() {
+	public float getX() {
 		// TODO Auto-generated method stub
 		return coords[0];
 	}
 	
-	public double getY() {
+	public float getY() {
 		// TODO Auto-generated method stub
 		return coords[1];
 	}

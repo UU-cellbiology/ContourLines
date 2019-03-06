@@ -14,7 +14,7 @@
  
     <groupId>sc.fiji</groupId>
     <artifactId>ContourLines_</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
  
     <name>ContourLines</name>
     <description>ContourLines Plugin for ImageJ</description>
