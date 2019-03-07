@@ -68,6 +68,8 @@ public class ContourLines_ implements PlugIn {
 	/** selected color from Color Picker/Toolbar **/
 	Color systemColor;
 	
+	//double dStrokeWidth;
+	
 	/** overlay for render **/
 	Overlay image_overlay; 
 
@@ -90,10 +92,6 @@ public class ContourLines_ implements PlugIn {
 		long startTime;
 		long contourTime=0;
 		
-		int i;
-		
-
-		
 		
 		imp = IJ.getImage();
 		if(null == imp)
@@ -112,6 +110,20 @@ public class ContourLines_ implements PlugIn {
 			return;
 		
 		IJ.log("Countour Lines v.0.0.3 plugin");
+		IJ.log("Parameters:");
+		IJ.log("Smoothing radius: "+Float.toString(dSmoothR)+" pixels");
+		IJ.log("Line integration step: "+Float.toString(dTimeStep)+" pixels");
+		IJ.log("Distance between lines: "+Float.toString(dSep)+" pixels");
+		if(bSingleColor)
+			IJ.log("Using single color");
+		else
+		{
+			if(bInvertLUT)
+				IJ.log("Using "+ sLUTName +" LUT (inverted)");
+			else
+				IJ.log("Using "+ sLUTName);
+		}
+
 		//let's start measuring time		
 		startTime = System.nanoTime();
 				
@@ -422,7 +434,7 @@ public class ContourLines_ implements PlugIn {
 			polyline.setStrokeColor(new Color(RGBLutTable[(int)nAverVal][0],RGBLutTable[(int)nAverVal][1],RGBLutTable[(int)nAverVal][2]));
 		 }
 		 
-		 
+		//polyline.setStrokeWidth(dStrokeWidth);
 		
 		return polyline;
 		
@@ -626,8 +638,9 @@ public class ContourLines_ implements PlugIn {
 		
 		//linkingD.addChoice("Linking sequence: ",sLinkType, Prefs.get("CurveTrace.nLinkingType", "Incremental"));
 		contourlinesD.addNumericField("Smoothing radius:", Prefs.get("ContourLines.dSmoothR", 2.0), 1, 3,"pixels");
-		contourlinesD.addNumericField("Line integration step (0.01-1):", Prefs.get("ContourLines.dTimeStep", 0.5), 2, 3,"pixels");
+		contourlinesD.addNumericField("Line integration step (0.01-1):", Prefs.get("ContourLines.dTimeStep", 0.5), 2, 4,"pixels");
 		contourlinesD.addNumericField("Distance between lines:", Prefs.get("ContourLines.dSep", 5), 1, 3,"pixels");
+		//contourlinesD.addNumericField("Stroke width:", Prefs.get("ContourLines.dStrokeWidth", 1), 0, 2,"pixels");
 		contourlinesD.addCheckbox("Use single color (current) to draw lines?", Prefs.get("ContourLines.bSingleColor", true));
 		contourlinesD.addChoice("Color code contours with LUT:",luts,Prefs.get("ContourLines.sLutChoice","Fire"));
 		contourlinesD.addCheckbox("Invert LUT?", Prefs.get("ContourLines.bInvertLUT", false));
@@ -642,6 +655,8 @@ public class ContourLines_ implements PlugIn {
 		Prefs.set("ContourLines.dTimeStep", dTimeStep);
 		dSep = (float) contourlinesD.getNextNumber();
 		Prefs.set("ContourLines.dSep", dSep);
+		//dStrokeWidth = contourlinesD.getNextNumber();
+		//Prefs.set("ContourLines.dStrokeWidth", dStrokeWidth);
 		bSingleColor = contourlinesD.getNextBoolean();
 		Prefs.set("ContourLines.bSingleColor", bSingleColor);
 		nLutChoice = contourlinesD.getNextChoiceIndex();
