@@ -47,8 +47,13 @@ public class ContourLines_ implements PlugIn {
 	/** new seed points coordinates **/
 	ArrayList<Float []> fSeedPoints = new ArrayList<Float []>(); 
 	
-	/** separation distance betweel contour lines **/
+	/** separation distance between contour lines **/
 	float dSep;
+	/** stop line integration when it is closer than (dStopLineSep * dSep) **/
+	float dStopLineSep;
+	
+	/** ignore open contours **/
+	boolean bRemoveOpen;
 	float dGridSize;
 	/** image size **/
 	int nW,nH;
@@ -88,6 +93,8 @@ public class ContourLines_ implements PlugIn {
 	@Override
 	public void run(String arg) {
 		
+		PolygonRoi new_line;
+		
 		/** time measuring variables**/
 		long startTime;
 		long contourTime=0;
@@ -109,11 +116,13 @@ public class ContourLines_ implements PlugIn {
 		if(!showParametersDialog())
 			return;
 		
-		IJ.log("Countour Lines v.0.0.3 plugin");
+		IJ.log("Countour Lines v.0.0.4 plugin");
 		IJ.log("Parameters:");
 		IJ.log("Smoothing radius: "+Float.toString(dSmoothR)+" pixels");
 		IJ.log("Line integration step: "+Float.toString(dTimeStep)+" pixels");
 		IJ.log("Distance between lines: "+Float.toString(dSep)+" pixels");
+		IJ.log("Stop line at fraction of distance: "+Float.toString(dStopLineSep));
+		
 		if(bSingleColor)
 			IJ.log("Using single color");
 		else
@@ -123,7 +132,10 @@ public class ContourLines_ implements PlugIn {
 			else
 				IJ.log("Using "+ sLUTName);
 		}
-
+		if(bRemoveOpen)
+		{
+			IJ.log("Open contours are removed");
+		}
 		//let's start measuring time		
 		startTime = System.nanoTime();
 				
@@ -170,11 +182,16 @@ public class ContourLines_ implements PlugIn {
 		
 		nLines=0;
 		//first line
-		image_overlay.add(buildLine(iniSeed.getX(),iniSeed.getY()));		
-		nLines++;
-		IJ.log("Line "+ Integer.toString(nLines)+" added.");
+		new_line=buildLine(iniSeed.getX(),iniSeed.getY());
+		if(new_line!=null)
+		{
+			//add to overlay
+			image_overlay.add(new_line);		
+			nLines++;
+			IJ.log("Line "+ Integer.toString(nLines)+" added.");
+		}
 
-		//add to overlay
+		//show
 		imp.setOverlay(image_overlay);
 		imp.updateAndRepaintWindow();
 		imp.show();
@@ -242,20 +259,22 @@ public class ContourLines_ implements PlugIn {
 				if(goOn && bFoundSeed)
 				{
 					new_line=buildLine(seed_point[0],seed_point[1]);
-					
-					if(new_line.size()>2)
+					if (new_line!=null)
 					{
-						image_overlay.add(new_line);
-					
-						nLines++;
-						imp.setOverlay(image_overlay);
-						imp.updateAndRepaintWindow();
-						imp.show();
-						IJ.log("Line "+ Integer.toString(nLines)+" added.");
-						if(!imp.isProcessor())
+						if(new_line.size()>2)
 						{
-							IJ.log("Image closed. Terminating.");
-							return false;
+							image_overlay.add(new_line);
+						
+							nLines++;
+							imp.setOverlay(image_overlay);
+							imp.updateAndRepaintWindow();
+							imp.show();
+							IJ.log("Line "+ Integer.toString(nLines)+" added.");
+							if(!imp.isProcessor())
+							{
+								IJ.log("Image closed. Terminating.");
+								return false;
+							}
 						}
 					}
 				}
@@ -326,7 +345,7 @@ public class ContourLines_ implements PlugIn {
 					ycurr = ycurr +yvel * dTimeStep;
 
 					//line is close to another line, abort growth
-					if(isBusy(xcurr,ycurr,((float)dSep)*0.5f))
+					if(isBusy(xcurr,ycurr,dSep*dStopLineSep))
 					{
 						bEnd = true;
 						ownGrid[gx][gy]=2;
@@ -391,7 +410,8 @@ public class ContourLines_ implements PlugIn {
 		float[] floatY = new float[px.size()];
 		float nAverVal=0;
 		int i = 0;
-		for (i=0;i<px.size();i++) 
+		int nPoints =px.size();
+		for (i=0;i<nPoints;i++) 
 		{
 			//convert it to two arrays that could be fed to PolygonRoi
 			floatX[i]=px.get(i);
@@ -403,7 +423,19 @@ public class ContourLines_ implements PlugIn {
 		}
 		
 		 //contour line ROI		
-		 polyline = new PolygonRoi(floatX, floatY, Roi.POLYLINE);
+		//let's check for the distance from the beginning to the end
+		//if it is less than 1.5 pixels, make it a closed contour
+		 if(Math.sqrt(Math.pow(floatX[0]-floatX[nPoints-1], 2)+Math.pow(floatY[0]-floatY[nPoints-1], 2))<1.5)
+		 {
+			 polyline = new PolygonRoi(floatX, floatY, Roi.POLYGON);
+		 }
+		 else //polyline
+		 {
+			 if(bRemoveOpen)
+			 {	 return null;}
+			 else
+			 {polyline = new PolygonRoi(floatX, floatY, Roi.POLYLINE);}
+		 }
 		 //well, single color
 		 if(bSingleColor)
 		 {
@@ -414,7 +446,7 @@ public class ContourLines_ implements PlugIn {
 		 {
 			//calculating average intensity per line
 			nAverVal=0;
-			for (i=0;i<px.size();i++) 
+			for (i=0;i<nPoints;i++) 
 			{
 				nAverVal += ip.getf((int)Math.floor(floatX[i]), (int)Math.floor(floatY[i]));
 			}
@@ -640,10 +672,12 @@ public class ContourLines_ implements PlugIn {
 		contourlinesD.addNumericField("Smoothing radius:", Prefs.get("ContourLines.dSmoothR", 2.0), 1, 3,"pixels");
 		contourlinesD.addNumericField("Line integration step (0.01-1):", Prefs.get("ContourLines.dTimeStep", 0.5), 2, 4,"pixels");
 		contourlinesD.addNumericField("Distance between lines:", Prefs.get("ContourLines.dSep", 5), 1, 3,"pixels");
+		contourlinesD.addNumericField("Stop line at fraction of distance:", Prefs.get("ContourLines.dStopLineSep", 0.5), 1, 3,"fraction");
 		//contourlinesD.addNumericField("Stroke width:", Prefs.get("ContourLines.dStrokeWidth", 1), 0, 2,"pixels");
 		contourlinesD.addCheckbox("Use single color (current) to draw lines?", Prefs.get("ContourLines.bSingleColor", true));
 		contourlinesD.addChoice("Color code contours with LUT:",luts,Prefs.get("ContourLines.sLutChoice","Fire"));
 		contourlinesD.addCheckbox("Invert LUT?", Prefs.get("ContourLines.bInvertLUT", false));
+		contourlinesD.addCheckbox("Remove open contours?", Prefs.get("ContourLines.bRemoveOpen", false));
 		contourlinesD.setResizable(false);
 		contourlinesD.showDialog();	
 		if (contourlinesD.wasCanceled())
@@ -655,6 +689,9 @@ public class ContourLines_ implements PlugIn {
 		Prefs.set("ContourLines.dTimeStep", dTimeStep);
 		dSep = (float) contourlinesD.getNextNumber();
 		Prefs.set("ContourLines.dSep", dSep);
+		dStopLineSep = (float) contourlinesD.getNextNumber();
+		Prefs.set("ContourLines.dStopLineSep", dStopLineSep);
+
 		//dStrokeWidth = contourlinesD.getNextNumber();
 		//Prefs.set("ContourLines.dStrokeWidth", dStrokeWidth);
 		bSingleColor = contourlinesD.getNextBoolean();
@@ -664,6 +701,8 @@ public class ContourLines_ implements PlugIn {
 		sLUTName = luts[nLutChoice];
 		bInvertLUT = contourlinesD.getNextBoolean();
 		Prefs.set("ContourLines.bInvertLUT", bInvertLUT);
+		bRemoveOpen = contourlinesD.getNextBoolean();
+		Prefs.set("ContourLines.bRemoveOpen", bRemoveOpen);
 
 		return true;
 	}
