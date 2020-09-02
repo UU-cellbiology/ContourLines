@@ -9,7 +9,7 @@ Based/inspired by [streamlines](https://github.com/anvaka/streamlines) project b
 You need to download and install [ImageJ](https://imagej.nih.gov/ij/download.html) or [FIJI](http://fiji.sc/#download) on your computer first.
 
 For FIJI
-* add http://sites.imagej.net/Ekatrukha/ to the list of update sites, as follows
+* add https://sites.imagej.net/Ekatrukha/ to the list of update sites, as follows
 * go to Help -> Update and press "Manage update sites" button
 * press "Add update site" button and put the following link there http://sites.imagej.net/Ekatrukha/
 
