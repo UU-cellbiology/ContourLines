@@ -11,7 +11,7 @@ You need to download and install [ImageJ](https://imagej.nih.gov/ij/download.htm
 For FIJI
 * add https://sites.imagej.net/Ekatrukha/ to the list of update sites, as follows
 * go to Help -> Update and press "Manage update sites" button
-* press "Add update site" button and put the following link there http://sites.imagej.net/Ekatrukha/
+* press "Add update site" button and put the following link there https://sites.imagej.net/Ekatrukha/
 
 For ImageJ
 * Download and copy [the latest version of plugin](https://github.com/ekatrukha/ContourLines/blob/master/target/ContourLines_-0.0.4.jar?raw=true) into the *plugins* folder of your ImageJ. (for example, in Windows look for *C:\Program Files\ImageJ\plugins*)
